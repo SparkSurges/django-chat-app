@@ -1,0 +1,7 @@
+# Files
+.env
+.sqlite
+
+# Directories
+__pycache__
+djangovenv

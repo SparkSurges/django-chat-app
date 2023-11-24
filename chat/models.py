@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-class Room(models.Model):
+class Chat(models.Model):
     name = models.CharField(max_length=128)
     online = models.ManyToManyField(to=User, blank=True)
 
@@ -21,7 +21,7 @@ class Room(models.Model):
 
 class Message(models.Model):
     user = models.ForeignKey(to=User, on_delete=models.CASCADE)
-    room = models.ForeignKey(to=Room, on_delete=models.CASCADE)
+    chat = models.ForeignKey(to=Chat, on_delete=models.CASCADE)
     content = models.CharField(max_length=512)
     timestamp = models.TimeField(auto_now_add=True)
 

@@ -1,6 +1,7 @@
 # Files
 .env
-.sqlite3
+*.sqlite3
+*.sqlite
 
 # Directories
 __pycache__

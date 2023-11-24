@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from dotenv import dotenv_values
 
@@ -6,6 +7,7 @@ ENV = dotenv_values('./env/.env')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-%j2r+-f1@2)r-g-js$!%vv&*34doww(@s(9p+#cvb3p5m3l9_e' if not ENV['SECRET_KEY'] else ENV['SECRET_KEY'] 
@@ -42,7 +44,7 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [TEMPLATE_DIR],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

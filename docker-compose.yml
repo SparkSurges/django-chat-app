@@ -1,0 +1,27 @@
+version: '3'
+
+services:
+  web:
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    networks:
+      - redis_network 
+  
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+    env_file:
+      - ./env/.env 
+    networks:
+      - redis_network 
+
+networks:
+  redis_network:
+    driver: bridge

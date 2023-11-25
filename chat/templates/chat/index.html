@@ -1,6 +1,6 @@
-{% load static %}
-
 {% extends 'base/base.html' %}
+
+{% load static %}
 
 {% block custom_css %}
     #roomSelect {
@@ -28,4 +28,8 @@
             </select>
         </div>
     </div>
+{% endblock %}
+
+{% block custom_js %}
+    <script src="{% static 'index.js' %}"></script>
 {% endblock %}

@@ -1,6 +1,6 @@
-{% load static %}
-
 {% extends 'base/base.html' %}
+
+{% load static %}
 
 {% block custom_css %}
     #chatLog {
@@ -38,4 +38,6 @@
     {{ room.name|json_script:"roomName" }}
 {% endblock %}
 
-<script src="{% static 'room.js' %}"></script>
+{% block custom_js %}
+    <script src="{% static 'chat.js' %}"></script>
+{% endblock %}

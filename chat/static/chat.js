@@ -1,13 +1,13 @@
 console.log("Sanity check from room.js.");
 
-const roomName = JSON.parse(document.getElementById('roomName').textContent);
-
+let chatSocket = null;
 let chatLog = document.querySelector("#chatLog");
 let chatMessageInput = document.querySelector("#chatMessageInput");
 let chatMessageSend = document.querySelector("#chatMessageSend");
 let onlineUsersSelector = document.querySelector("#onlineUsersSelector");
 
-// adds a new option to 'onlineUsersSelector'
+const roomName = JSON.parse(document.getElementById('roomName').textContent);
+
 function onlineUsersSelectorAdd(value) {
     if (document.querySelector("option[value='" + value + "']")) return;
     let newOption = document.createElement("option");
@@ -16,25 +16,64 @@ function onlineUsersSelectorAdd(value) {
     onlineUsersSelector.appendChild(newOption);
 }
 
-// removes an option from 'onlineUsersSelector'
 function onlineUsersSelectorRemove(value) {
     let oldOption = document.querySelector("option[value='" + value + "']");
     if (oldOption !== null) oldOption.remove();
 }
 
-// focus 'chatMessageInput' when user opens the page
+function connect() {
+    const webSocketServerName = 'ws://' + window.location.host + '/ws/chat/' + roomName + '/';
+    chatSocket = new WebSocket(webSocketServerName);
+
+    chatSocket.onopen = (e) => {
+        console.log('Successfully connected to the webSocket server: ' + webSocketServerName);
+    }
+
+    chatSocket.onclose = (e) => {
+        console.log('webSocket connection closed unexpectedly. Trying to reconnect in 2s...');
+        setTimeout(() => {
+            console.log('Reconnecting...');
+            connect();
+        }, 2000);
+    }
+
+    chatSocket.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        console.log(data);
+
+        switch (data.type) {
+            case 'chat_message':
+                chatLog.value += data.message + '\n';
+                break;
+            default:
+                console.error('Unknown message type!');
+                break;
+        }
+
+        chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    chatSocket.onerror = (err) => {
+        console.log("WebSocket encountered an error: " + err.message);
+        console.log("Closing the socket.");
+        chatSocket.close();
+    }
+}
+
 chatMessageInput.focus();
 
-// submit if the user presses the enter key
 chatMessageInput.onkeyup = function(e) {
     if (e.keyCode === 13) {  // enter key
         chatMessageSend.click();
     }
 };
 
-// clear the 'chatMessageInput' and forward the message
 chatMessageSend.onclick = function() {
     if (chatMessageInput.value.length === 0) return;
-    // TODO: forward the message to the WebSocket
+    chatSocket.send(JSON.stringify({
+        'message': chatMessageInput.value,
+    }));
     chatMessageInput.value = "";
 };
+
+connect();

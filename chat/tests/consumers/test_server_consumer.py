@@ -37,8 +37,21 @@ async def test_connect_authenticated():
 
 @pytest.mark.asyncio
 async def test_receive_authenticated_message():
-    communicator = WebsocketCommunicator(ServerConsumer.as_asgi())
-    user = get_user_model().objects.create_user(username='testuser', password='testpass')
+    user = await database_sync_to_async(get_user_model().objects.create_user)(
+        username='testuser',
+        password='testpass'
+    )
+
+    client = Client()
+    await sync_to_async(client.login)(username='testuser', password='testpass')
+
+    session_id = client.cookies['sessionid'].value
+
+    headers = [
+        (b'cookie', f'sessionid={session_id}'.encode('utf-8')),
+    ]
+
+    communicator = WebsocketCommunicator(ServerConsumer.as_asgi(), 'ws/server', headers=headers)
 
     await communicator.connect()
 
@@ -57,7 +70,7 @@ async def test_receive_authenticated_message():
 
 @pytest.mark.asyncio
 async def test_receive_unauthenticated_message():
-    communicator = WebsocketCommunicator(ServerConsumer.as_asgi())
+    communicator = WebsocketCommunicator(ServerConsumer.as_asgi(), 'ws/server')
 
     # Try to receive a message without connecting first
     message_data = {'type': 'receive', 'message': 'Test message', 'group_name': 'test_group'}
@@ -71,8 +84,21 @@ async def test_receive_unauthenticated_message():
 
 @pytest.mark.asyncio
 async def test_receive_invalid_group_name():
-    communicator = WebsocketCommunicator(ServerConsumer.as_asgi())
-    user = get_user_model().objects.create_user(username='testuser', password='testpass')
+    user = await database_sync_to_async(get_user_model().objects.create_user)(
+        username='testuser',
+        password='testpass'
+    )
+
+    client = Client()
+    await sync_to_async(client.login)(username='testuser', password='testpass')
+
+    session_id = client.cookies['sessionid'].value
+
+    headers = [
+        (b'cookie', f'sessionid={session_id}'.encode('utf-8')),
+    ]
+
+    communicator = WebsocketCommunicator(ServerConsumer.as_asgi(), 'ws/server', headers=headers)
 
     await communicator.connect()
 

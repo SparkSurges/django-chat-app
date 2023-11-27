@@ -48,7 +48,7 @@ class Chat(models.Model):
             self.online.add(user)
             self.save()
 
-    def leave(self, user):
+    def leave_online(self, user):
         if user in self.online.all():
             self.online.remove(user)
             self.save()

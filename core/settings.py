@@ -1,4 +1,7 @@
 import os
+import logging
+
+from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 from dotenv import dotenv_values
 
@@ -15,7 +18,46 @@ SECRET_KEY = 'django-insecure-%j2r+-f1@2)r-g-js$!%vv&*34doww(@s(9p+#cvb3p5m3l9_e
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True if not ENV['DEBUG'] else ENV['DEBUG']
 
-ALLOWED_HOSTS = []
+# SECURITY WARNING: define the correct hosts in production!
+ALLOWED_HOSTS = ["*"]
+
+# SECURITY WARNING: define the correct domain in production!
+CSRF_TRUSTED_ORIGINS = [ENV['CSRF_ORIGIN']]
+
+# Ensure the logs directory exists, or create it
+LOG_DIR = 'logs' 
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'level': 'ERROR',
+            'class': 'logging.StreamHandler',
+        },
+        'file': {
+            'level': 'WARNING',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': 'logs/website.log',
+            'when': 'midnight',  # Rotate at midnight
+            'interval': 1,       # Daily rotation
+            'backupCount': 1,    # Keep up to 7 days of logs
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'WARNING'),
+            'propagate': False,
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'ERROR',  
+    },
+}
 
 # Application definition
 INSTALLED_APPS = [

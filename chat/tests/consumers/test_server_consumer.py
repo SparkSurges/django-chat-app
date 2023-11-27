@@ -5,26 +5,38 @@ from django.contrib.auth import get_user_model
 from django.test import Client
 from chat.consumers.server_consumer import ServerConsumer
 from channels.db import database_sync_to_async
-from asgiref.sync import sync_to_async
+from asgiref.sync import sync_to_async, async_to_sync
+from channels.routing import URLRouter
+from django.urls import path
+
+@pytest.mark.django_db
+@pytest.mark.asyncio
+async def set_user():
+    return await database_sync_to_async(get_user_model().objects.create_user)(
+        username='testuser',
+        password='testpass',
+    )
 
 @pytest.mark.django_db
 @pytest.mark.asyncio
 async def test_connect_authenticated():
-    user = await database_sync_to_async(get_user_model().objects.create_user)(
-        username='testuser',
-        password='testpass'
-    )
+    user = await set_user() 
 
     client = Client()
-    await sync_to_async(client.login)(username='testuser', password='testpass')
-
+    await sync_to_async(client.login)(
+        username=user.username, 
+        password='testpass',
+    )
     session_id = client.cookies['sessionid'].value
 
     headers = [
-        (b'cookie', f'sessionid={session_id}'.encode('utf-8')),
+        ('cookie', f'sessionid={session_id}'.encode('utf-8')),
     ]
 
-    communicator = WebsocketCommunicator(ServerConsumer.as_asgi(), 'ws/server', headers=headers)
+    application = URLRouter([
+        path('ws/server/', ServerConsumer.as_asgi())
+    ]) 
+    communicator = WebsocketCommunicator(application, '/ws/server/', headers=headers)
 
     connected, _ = await communicator.connect()
     assert connected
@@ -35,6 +47,7 @@ async def test_connect_authenticated():
 
     await communicator.disconnect()
 
+@pytest.mark.django_db
 @pytest.mark.asyncio
 async def test_receive_authenticated_message():
     user = await database_sync_to_async(get_user_model().objects.create_user)(
@@ -67,7 +80,6 @@ async def test_receive_authenticated_message():
 
     await communicator.disconnect()
 
-
 @pytest.mark.asyncio
 async def test_receive_unauthenticated_message():
     communicator = WebsocketCommunicator(ServerConsumer.as_asgi(), 'ws/server')
@@ -81,10 +93,10 @@ async def test_receive_unauthenticated_message():
     assert response['type'] == 'error'
     assert response['message'] == 'Invalid message'
 
-
+@pytest.mark.django_db
 @pytest.mark.asyncio
 async def test_receive_invalid_group_name():
-    user = await database_sync_to_async(get_user_model().objects.create_user)(
+    await database_sync_to_async(get_user_model().objects.create_user)(
         username='testuser',
         password='testpass'
     )

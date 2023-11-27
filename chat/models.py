@@ -57,6 +57,16 @@ class Chat(models.Model):
             self.online.remove(user)
             self.save()
 
+    def join(self, user):
+        if user not in self.users.all():
+            self.users.add(user)
+            self.save()
+    
+    def leave(self, user):
+        if user in self.users.all():
+            self.users.remove(user)
+            self.save()
+
     def save(self, *args, **kwargs):
         self.generate_link()
         super().save(*args, **kwargs)

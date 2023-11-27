@@ -1,9 +1,38 @@
 import json
-
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
-
 from chat.models import Chat, Message
+from django.contrib.auth.models import User
+
+class ServerConsumer(WebsocketConsumer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(args, kwargs)
+        self.rooms = None
+        self.groups_name = list()
+
+    async def connect(self):
+        self.user = self.scope['user']
+        if self.user.is_authenticated:
+            self.rooms = self.user.chats.all()
+            self.groups_name = [f'chat_{room.name}' for room in self.rooms]
+
+            self.accept()
+
+            for id in range(len(self.rooms)):
+                self.send(json.dumps({
+                    'type': 'users_list',
+                    'users': [user.username for user in self.rooms[id].users.all()]
+                }))
+                self.send(json.dumps({
+                    'type': 'users_list_online',
+                    'users': [user.username for user in self.rooms[id].online.all()]
+                }))
+
+                await self.channel_layer.group_add(
+                    self.groups_name[id],
+                    self.channel_name,
+                )
+
 
 class ChatConsumer(WebsocketConsumer):
 
@@ -12,7 +41,6 @@ class ChatConsumer(WebsocketConsumer):
         self.room_name = None
         self.room_group_name = None
         self.room = None
-        self.name = None
 
     def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
@@ -33,9 +61,10 @@ class ChatConsumer(WebsocketConsumer):
             self.room.join(self.user)
 
         self.send(json.dumps({
-            'type': 'user_list',
+            'type': 'user_list_online',
             'users': [user.username for user in self.room.online.all()],
         }))
+
         # Joining the channels group
         async_to_sync(self.channel_layer.group_add)(
             self.room_group_name,

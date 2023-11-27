@@ -1,8 +1,11 @@
 import json
 import datetime
+from typing import Any
 from django.db import models
 from django.contrib.auth.models import User
-from rest_framework.authtoken.models import Token
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
+from chat.utils import generate_key
 
 class Chat(models.Model):
     id = models.UUIDField(primary_key=True)
@@ -13,6 +16,7 @@ class Chat(models.Model):
     online = models.ManyToManyField(to=User, blank=True, related_name='online_users')
     is_private = models.BooleanField(blank=False, null=False, default=False)
     private_links = models.JSONField(default=list)
+    group_name = models.CharField(max_length=64, blank=False, null=False, default=str) 
 
     def generate_link(self):
         if self.is_private:
@@ -21,7 +25,7 @@ class Chat(models.Model):
             except json.JSONDecodeError:
                 links = []
 
-            token = Token.generate_key()
+            token = generate_key()
             link_data = {
                 'created_at': datetime.now().isoformat(),
                 'link': f'chat/{token}',
@@ -58,10 +62,18 @@ class Chat(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f'{self.name}'
+        return self.name
     
     class Meta:
         db_table = 'chat'
+
+def generate_group_name(instance):
+    return f'chat_{instance.name}_{generate_key()}'
+
+@receiver(pre_save, sender=Chat)
+def set_default_group_name(sender, instance, **kwargs):
+    if not instance.group_name:
+        instance.group_name = generate_group_name(instance)
 
 class Message(models.Model):
     id = models.UUIDField(primary_key=True)

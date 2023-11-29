@@ -5,7 +5,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
-from chat.utils import generate_key
+from chat.utils import generate_key, generate_link
 
 class Chat(models.Model):
     id = models.UUIDField(primary_key=True)
@@ -14,30 +14,8 @@ class Chat(models.Model):
     picture = models.ImageField(upload_to='img/', default='img/default_chat.jpg')
     users = models.ManyToManyField(to=User, blank=True, related_name='chats')
     online = models.ManyToManyField(to=User, blank=True, related_name='online_users')
-    is_private = models.BooleanField(blank=False, null=False, default=False)
-    private_links = models.JSONField(default=list)
+    private_link = models.JSONField(default=dict)
     group_name = models.CharField(max_length=64, blank=False, null=False, default=str) 
-
-    def generate_link(self):
-        if self.is_private:
-            try:
-                links = json.loads(self.private_links)
-            except json.JSONDecodeError:
-                links = []
-
-            token = generate_key()
-            link_data = {
-                'created_at': datetime.now().isoformat(),
-                'link': f'chat/{token}',
-            }
-            links.append(link_data)
-
-            self.private_links = json.dumps(links)
-            self.save()
-
-            return link_data['link']
-
-        return f'{self.name}'
 
     def delete_image(self):
         self.picture.delete(save=False)
@@ -67,10 +45,6 @@ class Chat(models.Model):
             self.users.remove(user)
             self.save()
 
-    def save(self, *args, **kwargs):
-        self.generate_link()
-        super().save(*args, **kwargs)
-
     def __str__(self):
         return self.name
     
@@ -79,6 +53,20 @@ class Chat(models.Model):
 
 def generate_group_name(instance):
     return f'chat_{instance.name}_{generate_key()}'
+
+def generate_link():
+    token = generate_key()
+    link_data = {
+        'created_at': datetime.now().isoformat(),
+        'link': f'chat/{token}',
+    }
+
+    return link_data
+
+@receiver(pre_save, sender=Chat)
+def set_initial_link(sender, instance, **kwargs):
+    if not instance.private_link:
+        instance.private_link = json.dumps(generate_link())
 
 @receiver(pre_save, sender=Chat)
 def set_default_group_name(sender, instance, **kwargs):

@@ -1,10 +1,11 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-class Status(models.Model):
+class Profile(models.Model):
     id = models.UUIDField(primary_key=True)
     user = models.OneToOneField(to=User, on_delete=models.CASCADE)
     status_connection = models.BooleanField(blank=False, null=True, default=False)
+    picture = models.ImageField(upload_to='img/user/', default='img/default_user.jpg')
 
     def connected(self):
         self.status_connection = True
@@ -14,5 +15,8 @@ class Status(models.Model):
         self.status_connection = False
         self.save()
 
-    def __str__(self):
+    def check_connection(self):
         return self.status_connection
+
+    def __str__(self):
+        return self.user.username

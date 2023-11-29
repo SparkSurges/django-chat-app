@@ -1,7 +1,8 @@
 import json
 import logging
-from django.shortcuts import render
+from django.shortcuts import render, redirect 
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.http import JsonResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth import get_user_model
@@ -29,14 +30,19 @@ def chat_view(request):
 def leave_chat_view(request, id):
     if request.method == 'POST':
         try:
-            queryset = request.user.chats.get(id=id)
-        except:
-            logger.warning()
+            chat = request.user.chats.get(id=id)
+            chat.leave(request.user)
+            return redirect('chat-room')
+        except Exception as err:
+            logger.warning(f'An warning ocurred: {err}')
+            messages.error(request, f'Error trying to leave chat: {err}')
+            return redirect('chat-room')
 
 @login_required(login_url='/user/login')
 def create_chat_view(request):
     if request.method == 'POST':
-        pass
+            user = request.user 
+            pass
 
 
 @login_required(login_url='/user/login')

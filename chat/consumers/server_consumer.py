@@ -29,7 +29,7 @@ class ServerConsumer(AsyncWebsocketConsumer):
         self.groups_name = [room.group_name for room in self.rooms]
 
         self.accept()
-        self.user.status.connected()
+        self.user.profile.connected()
 
         status = list([])
         for id in range(len(self.rooms)):
@@ -67,8 +67,8 @@ class ServerConsumer(AsyncWebsocketConsumer):
             }
         )
 
-        room = self.user.chats.get(name=group_name)
-        Message.objects.create(user=self.user, chat=room, content=message)
+        room = await database_sync_to_async(self.user.chats.get)(name=group_name)
+        await database_sync_to_async(Message.objects.create)(user=self.user, chat=room, content=message)
 
     @check_authentication
     async def connect(self):

@@ -11,11 +11,7 @@ logger = logging.getLogger(__name__)
 
 INITIAL_PAGE_SIZE = 10
 
-# Todo - criar uma view para sair de um chat
-# Todo - criar uma view para criar um chat
-# Todo - criar uma view para dar update em um chat
-
-@login_required
+@login_required(login_url='/user/login')
 def chat_view(request):
     if request.method == 'GET':
         queryset = request.user.chats.all()
@@ -27,35 +23,47 @@ def chat_view(request):
             'username': request.user.username,
         }
         
-        return render(request, 'chat/chat.html', {'chats': serialized_chats, 'user': serialized_user})
+        return render(request, 'chat/index.html', {'chats': serialized_chats, 'user': serialized_user})
 
-@login_required
+@login_required(login_url='/user/login')
 def leave_chat_view(request, id):
     if request.method == 'POST':
         try:
             queryset = request.user.chats.get(id=id)
-        except err:
+        except:
             logger.warning()
 
-@login_required
+@login_required(login_url='/user/login')
 def create_chat_view(request):
     if request.method == 'POST':
+        pass
 
 
-@login_required
+@login_required(login_url='/user/login')
 def delete_chat_view(request):
     if request.method == 'POST':
+        pass
 
 
-@login_required
+@login_required(login_url='/user/login')
 def update_chat_view(request):
     if request.method == 'POST':
+        pass
 
-@login_required
+@login_required(login_url='/user/login')
 def create_contact_view(request):
     if request.method == 'POST':
+        pass
 
-@login_required
+@login_required(login_url='/user/login')
+def leave_chat_view(request, id):
+    if request.method == 'POST':
+        try:
+            queryset = request.user.chats.get(id=id)
+        except:
+            logger.warning()
+
+@login_required(login_url='/user/login')
 def load_chat_view(request):
     if request.method == 'GET':
         try:

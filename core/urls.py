@@ -4,6 +4,7 @@ from django.conf import settings
 
 urlpatterns = [
     path('chat/', include('chat.urls')),
+    path('user/', include('user.urls')),
     path('admin/', admin.site.urls),
 ]
 

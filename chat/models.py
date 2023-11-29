@@ -13,7 +13,6 @@ class Chat(models.Model):
     description = models.CharField(max_length=1024, blank=True)
     picture = models.ImageField(upload_to='img/', default='img/default_chat.jpg')
     users = models.ManyToManyField(to=User, blank=True, related_name='chats')
-    online = models.ManyToManyField(to=User, blank=True, related_name='online_users')
     private_link = models.JSONField(default=dict)
     group_name = models.CharField(max_length=64, blank=False, null=False, default=str) 
 

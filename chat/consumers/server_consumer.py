@@ -5,6 +5,8 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from chat.models import Chat, Message
 from django.contrib.auth.models import User
 from channels.db import database_sync_to_async
+from core.settings import ENV
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -22,14 +24,15 @@ class ServerConsumer(AsyncWebsocketConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(args, kwargs)
         self.rooms = list()
-        self.groups_name = list() 
+        self.groups_name = list()
 
     async def _initialize_connection(self):
         self.rooms = await database_sync_to_async(self.user.chats.all)()
         self.groups_name = [room.group_name for room in self.rooms]
 
         self.accept()
-        self.user.profile.connected()
+        user_id = self.scope['user'].id
+        cache.set(f'user_status:{user_id}', 'connected')
 
         status = list([])
         for id in range(len(self.rooms)):
@@ -38,12 +41,13 @@ class ServerConsumer(AsyncWebsocketConsumer):
                 self.rooms[id].name: [
                     {
                         'type': 'users_list',
-                        'users': [user.username for user in self.rooms[id].users.all()]
+                        'users': [
+                            {
+                                'username': user.username,
+                                'status_connection': cache.get(f'user_status:{user.id}', 'disconnected')
+                            } for user in self.rooms[id].users.all()
+                        ]
                     },
-                    {
-                        'type': 'users_list_online',
-                        'users': [user.username for user in self.rooms[id].online.all()]
-                    }
                ],
             })
 
@@ -81,7 +85,8 @@ class ServerConsumer(AsyncWebsocketConsumer):
                 self.groups_name[id],
                 self.channel_name,
             )
-            await database_sync_to_async(self.rooms[id].leave_online)(self.user)
+            user_id = self.scope['user'].id
+            cache.delete(f'user_status:{user_id}')
 
         return super().disconnect(code)
     

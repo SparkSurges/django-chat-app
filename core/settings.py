@@ -117,6 +117,18 @@ CHANNEL_LAYERS = {
     }
 }
 
+# Setting up cache
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': f"redis://{ENV['REDIS_IP']}:{ENV['REDIS_PORT']}/{ENV['REDIS_DATABASES']}",
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 

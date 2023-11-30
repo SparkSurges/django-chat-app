@@ -9,6 +9,7 @@ from chat.utils import generate_key, generate_link
 
 class Chat(models.Model):
     id = models.UUIDField(primary_key=True)
+    creator = models.ForeignKey(to=User, on_delete=models.CASCADE, related_name='own_chats')
     name = models.CharField(max_length=128)
     description = models.CharField(max_length=1024, blank=True)
     picture = models.ImageField(upload_to='img/', default='img/default_chat.jpg')
@@ -61,6 +62,11 @@ def generate_link():
     }
 
     return link_data
+
+@receiver(pre_save, sender=Chat)
+def set_creator_as_user(sender, instance, **kwargs):
+    if not instance.users.filter(user=instance.creator).exists():
+        instance.users.add(instance.creator)
 
 @receiver(pre_save, sender=Chat)
 def set_initial_link(sender, instance, **kwargs):

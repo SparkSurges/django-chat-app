@@ -41,12 +41,19 @@ def leave_chat_view(request, id):
     if request.method == 'POST':
         try:
             chat = request.user.chats.get(id=id)
+
+            if request.user == chat.creator:
+                chat.delete()
+                messages.success(request, f'Chat leaved and deleted by default successfully.')
+                return redirect('chat-room')
+            
             chat.leave(request.user)
-            return redirect('chat-room')
+            messages.success(request, f'Chat leaved successfully.')
         except Exception as err:
             logger.warning(f'An warning ocurred: {err}')
             messages.error(request, f'Error trying to leave chat: {err}')
-            return redirect('chat-room')
+        
+        return redirect('chat-room')
 
 @login_required(login_url='/user/login')
 def create_chat_view(request):
@@ -100,30 +107,13 @@ def create_contact_view(request):
         contact_form = ContactForm(data=request.POST)
 
         if contact_form.is_valid():
-            contact_form.save()
+            contact = contact_form.save(commit=False)
+            contact.user = request.user
+            contact.save()
             messages.success(request, f'Contact created successfully.')
             return redirect('chat-room')
     
         messages.error(request, f'Invalid contact post request')
-        return redirect('chat-room')
-
-@login_required(login_url='/user/login')
-def leave_chat_view(request, id):
-    if request.method == 'POST':
-        try:
-            chat = request.user.chats.get(id=id)
-
-            if request.user == chat.creator:
-                chat.delete()
-                messages.success(request, f'Chat leaved and deleted by default successfully.')
-                return redirect('chat-room')
-            
-            chat.leave(request.user)
-            messages.success(request, f'Chat leaved successfully.')
-        except Exception as err:
-            logger.warning(f'An warning ocurred: {err}')
-            messages.error(request, f'Error trying to leave chat: {err}')
-        
         return redirect('chat-room')
 
 @login_required(login_url='/user/login')

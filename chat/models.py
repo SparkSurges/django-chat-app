@@ -1,39 +1,25 @@
 import json
 import datetime
-from typing import Any
 from django.db import models
-from django.contrib.auth.models import User
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
-from chat.utils import generate_key, generate_link
+from chat.utils import generate_key
+from user.models import CustomUser
 
 class Chat(models.Model):
     id = models.UUIDField(primary_key=True)
-    creator = models.ForeignKey(to=User, on_delete=models.CASCADE, related_name='own_chats')
+    creator = models.ForeignKey(to=CustomUser, on_delete=models.CASCADE, blank=True, null=True, related_name='own_chats')
     name = models.CharField(max_length=128)
-    description = models.CharField(max_length=1024, blank=True)
+    description = models.CharField(max_length=1024, blank=True, null=True)
     picture = models.ImageField(upload_to='img/', default='img/default_chat.jpg')
-    users = models.ManyToManyField(to=User, blank=True, related_name='chats')
-    private_link = models.JSONField(default=dict)
-    group_name = models.CharField(max_length=64, blank=False, null=False, default=str) 
+    users = models.ManyToManyField(to=CustomUser, blank=True, null=True, related_name='chats')
+    link = models.JSONField(default=dict)
+    group_name = models.CharField(max_length=64) 
 
     def delete_image(self):
         self.picture.delete(save=False)
         self.picture = 'img/default_chat.jpg'
         self.save()
-
-    def get_online_count(self):
-        return self.online.count()
-    
-    def join_online(self, user):
-        if user not in self.online.all():
-            self.online.add(user)
-            self.save()
-
-    def leave_online(self, user):
-        if user in self.online.all():
-            self.online.remove(user)
-            self.save()
 
     def join(self, user):
         if user not in self.users.all():
@@ -71,7 +57,7 @@ def set_creator_as_user(sender, instance, **kwargs):
 @receiver(pre_save, sender=Chat)
 def set_initial_link(sender, instance, **kwargs):
     if not instance.private_link:
-        instance.private_link = json.dumps(generate_link())
+        instance.link = json.dumps(generate_link())
 
 @receiver(pre_save, sender=Chat)
 def set_default_group_name(sender, instance, **kwargs):
@@ -80,7 +66,7 @@ def set_default_group_name(sender, instance, **kwargs):
 
 class Message(models.Model):
     id = models.UUIDField(primary_key=True)
-    user = models.ForeignKey(to=User, on_delete=models.CASCADE)
+    user = models.ForeignKey(to=CustomUser, on_delete=models.CASCADE)
     chat = models.ForeignKey(to=Chat, on_delete=models.CASCADE)
     content = models.TextField(max_length=1024)
     timestamp = models.DateTimeField(auto_now_add=True)
@@ -90,3 +76,31 @@ class Message(models.Model):
     
     class Meta:
         db_table = 'message'
+
+class PrivateChat(models.Model):
+    id = models.UUIDField(primary_key=True)
+    users = models.ManyToManyField(to=CustomUser, related_name='private_chats')
+    group_name = models.CharField(max_length=64)
+
+    class Meta:
+        db_table = 'private_chat'
+
+def generate_group_name(instance):
+    return f'chat_private_{generate_key()}'
+
+@receiver(pre_save, sender=PrivateChat)
+def set_default_private_group_name(sender, instance, **kwargs):
+    if not instance.group_name:
+        instance.group_name = generate_group_name(instance)
+
+class PrivateMessage(models.Model):
+    id = models.UUIDField(primary_key=True)
+    user = models.ForeignKey(to=CustomUser, on_delete=models.CASCADE)
+    private_chat = models.ForeignKey(to=PrivateChat, on_delete=models.CASCADE)
+    content = models.TextField(max_length=1024)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'private_message'
+
+

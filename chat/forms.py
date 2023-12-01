@@ -10,3 +10,11 @@ class ChatForm(forms.ModelForm):
             'picture',
             'users',
         ]
+
+class PrivateChatForm(forms.ModelForm):
+    class Meta:
+        model = Chat
+        fields = [
+            'name',
+            'users',
+        ]

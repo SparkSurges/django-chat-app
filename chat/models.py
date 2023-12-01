@@ -85,6 +85,17 @@ class PrivateChat(models.Model):
     class Meta:
         db_table = 'private_chat'
 
+def get_user_contact(instance, user):
+    try:
+        user_contact = instance.users.exclude(id=user.id).first()
+        return user_contact
+    except CustomUser.DoesNotExist:
+        return None
+    
+def get_user_contact_username(instance, user):
+    user_contact = get_user_contact(instance, user)
+    return user.contacts.get(email=user_contact.email).username
+
 def generate_group_name(instance):
     return f'chat_private_{generate_key()}'
 
@@ -102,5 +113,3 @@ class PrivateMessage(models.Model):
 
     class Meta:
         db_table = 'private_message'
-
-

@@ -2,7 +2,7 @@ import json
 import logging
 import functools
 from channels.generic.websocket import AsyncWebsocketConsumer
-from chat.models import Chat, Message
+from chat.models import Chat, Message, get_user_contact_username, PrivateMessage
 from django.contrib.auth.models import User
 from channels.db import database_sync_to_async
 from core.settings import ENV
@@ -24,11 +24,15 @@ class ServerConsumer(AsyncWebsocketConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(args, kwargs)
         self.rooms = list()
+        self.private_rooms = list()
+        self.private_groups_name = list()
         self.groups_name = list()
 
     async def _initialize_connection(self):
         self.rooms = await database_sync_to_async(self.user.chats.all)()
         self.groups_name = [room.group_name for room in self.rooms]
+        self.private_rooms = await database_sync_to_async(self.user.private_chats.all)()
+        self.groups_name = [room.group_name for room in self.private_rooms]
 
         self.accept()
         user_id = self.scope['user'].id
@@ -36,7 +40,6 @@ class ServerConsumer(AsyncWebsocketConsumer):
 
         status = list([])
         for id in range(len(self.rooms)):
-            await self._join_group_and_update_status(self.groups_name[id])
             status.append({
                 self.rooms[id].name: [
                     {
@@ -56,23 +59,13 @@ class ServerConsumer(AsyncWebsocketConsumer):
                 self.channel_name,
             )
 
+        for id in range(len(self.private_rooms)):
+            await self.channel_layer.group_add(
+                self.private_groups_name[id],
+                self.channel_name,
+            )
+
         self.send(json.dumps(status))
-
-    async def _join_group_and_update_status(self, group_name):
-        await database_sync_to_async(self.rooms[self.groups_name.index(group_name)].join_online)(self.user)
-
-    async def _handle_received_message(self, group_name, message):
-        await self.channel_layer.group_send(
-            f'chat_{group_name}',
-            {
-                'type': 'chat_message',
-                'user': self.user.username,
-                'message': message,
-            }
-        )
-
-        room = await database_sync_to_async(self.user.chats.get)(name=group_name)
-        await database_sync_to_async(Message.objects.create)(user=self.user, chat=room, content=message)
 
     @check_authentication
     async def connect(self):
@@ -85,9 +78,14 @@ class ServerConsumer(AsyncWebsocketConsumer):
                 self.groups_name[id],
                 self.channel_name,
             )
-            user_id = self.scope['user'].id
-            cache.delete(f'user_status:{user_id}')
+        for id in range(len(self.private_rooms)):
+            await self.channel_layer.group_discard(
+                self.private_groups_name[id],
+                self.channel_name,
+            )
 
+        user_id = self.scope['user'].id
+        cache.delete(f'user_status:{user_id}')
         return super().disconnect(code)
     
     @check_authentication
@@ -98,7 +96,7 @@ class ServerConsumer(AsyncWebsocketConsumer):
             message = text_data_json['message']
             group_name = text_data_json['group_name']
 
-            if group_name not in self.groups_name:
+            if group_name not in self.groups_name and group_name not in self.private_groups_name:
                 logger.warning('Invalid group_name')
                 self.send(json.dumps({
                     'type': 'error',
@@ -121,6 +119,14 @@ class ServerConsumer(AsyncWebsocketConsumer):
                 'message': message,
             }
         )
+
+        if group_name not in self.groups_name:
+            private_room = await database_sync_to_async(self.user.chats.get)(name=group_name)
+            await database_sync_to_async(PrivateMessage.objects.create)(
+                user=self.user,
+                private_chat=private_room,
+                content=message 
+            )
 
         room = await database_sync_to_async(self.user.chats.get)(name=group_name)
         await database_sync_to_async(Message.objects.create)(

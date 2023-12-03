@@ -21,4 +21,8 @@ class Contact(models.Model):
 
     def __str__(self):
         return self.contact_key
-        
+
+def check_contact_exists(email) -> bool:
+    if CustomUser.objects.filter(email=email).exists():
+        return True
+    return False

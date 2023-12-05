@@ -1,13 +1,16 @@
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.urls import reverse
 from django.shortcuts import redirect, render
 from django.contrib import messages
 from user.forms import CustomLoginForm, CustomRegistrationForm
+from user.utils import anonymous_required
 
+@anonymous_required(redirect_to='chat-room')
 def login_view(request):
     if request.method == 'POST':
         form = CustomLoginForm(data=request.POST)
         if form.is_valid():
-            print('here')
             username = request.POST.get('username')
             password = request.POST.get('password')
             user = authenticate(request, username=username, password=password)
@@ -23,11 +26,13 @@ def login_view(request):
     form = CustomLoginForm()
     return render(request, 'user/login.html', {'form': form})
 
+@login_required(login_url=reverse('login'))
 def logout_view(request):
     logout(request)
     messages.success(request, 'Logout successfully.')
     return redirect('login')
 
+@anonymous_required(redirect_to='chat-room')
 def registration_view(request):
     if request.method == 'GET':
         form = CustomRegistrationForm()

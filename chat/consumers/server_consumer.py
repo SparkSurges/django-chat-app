@@ -15,7 +15,7 @@ def check_authentication(func):
     async def wrapper(self, *args, **kwargs):
         if not self.user:
             self.user = self.scope['user']
-        if self.user and self.user.is_authenticated:
+        if self.user.is_authenticated:
             return await func(self, *args, **kwargs)
         return wrapper
 

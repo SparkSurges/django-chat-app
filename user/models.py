@@ -3,10 +3,20 @@ from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
 
 class CustomUser(AbstractUser):
-    encrypted_hashkey = models.BinaryField()
     email = models.EmailField(_("email address"), blank=False, null=False, unique=True)
+    encrypted_hashkey = models.BinaryField()
     picture = models.ImageField(upload_to='img/users/', blank=True, null=True)
     connected = models.BooleanField(default=False)
+
+    def user_connected(self):
+        if not self.connected:
+            self.connected = True
+            self.save()
+
+    def user_disconnected(self):
+        if self.connected:
+            self.connected = False
+            self.save()
 
 class Contact(models.Model):
     contact_id = models.UUIDField(primary_key=True, db_column='contact_id')

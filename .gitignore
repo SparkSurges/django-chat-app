@@ -4,6 +4,7 @@
 *.sqlite
 
 # Directories
+logs
 __pycache__
 .pytest_cache
 djangovenv

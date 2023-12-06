@@ -6,7 +6,7 @@
 - As a user, I want to be able to edit my profile information, including my display name and profile picture, to personalize my chat experience.
 - As a user, I want to be able to search for and add contacts by their username or email address so that I can start chatting with them.
 - As a user, I want to be able to create new chat rooms or one-on-one conversations with my contacts to communicate with them.
-- As a user, I want to be able to send text messages, emojis, and multimedia files (images, videos) to my contacts.
+- As a user, I want to be able to send text messages, emojis to my contacts.
 - As a user, I want to receive real-time notifications for new messages so that I am aware of incoming messages even when the app is not open.
 - As a user, I want to be able to create and participate in group chats with multiple contacts for collaborative discussions.
 - As a user, I want to be able to edit or delete messages I have sent in a chat to correct mistakes or remove content.

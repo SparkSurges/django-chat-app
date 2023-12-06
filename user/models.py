@@ -3,24 +3,22 @@ from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
 
 class CustomUser(AbstractUser):
+    encrypted_hashkey = models.BinaryField()
     email = models.EmailField(_("email address"), blank=False, null=False, unique=True)
-
-class Profile(models.Model):
-    id = models.UUIDField(primary_key=True)
-    user = models.OneToOneField(to=CustomUser, on_delete=models.CASCADE)
-    picture = models.ImageField(upload_to='img/user/', default='img/default_user.jpg')
-
-    def __str__(self):
-        return self.user.username
+    picture = models.ImageField(upload_to='img/users/', blank=True, null=True)
+    connected = models.BooleanField(default=False)
 
 class Contact(models.Model):
-    id = models.UUIDField(primary_key=True)
+    contact_id = models.UUIDField(primary_key=True, db_column='contact_id')
+    user = models.ForeignKey(
+        to=CustomUser, 
+        on_delete=models.CASCADE, 
+        related_name='contacts',
+        db_column='user_id'
+    )
     username = models.CharField(max_length=128)
-    email = models.EmailField(_("contact"), blank=False)
-    user = models.ForeignKey(to=CustomUser, on_delete=models.CASCADE, related_name='contacts')
+    email = models.EmailField(_("contact"), blank=False, null=False)
 
     def __str__(self):
         return self.contact_key
 
-def check_contact_exists(email) -> bool:
-    return CustomUser.objects.filter(email=email).exists()

@@ -1,25 +1,26 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django.contrib.auth.models import User
-from user.models import Contact
+from user.models import Contact, CustomUser
 
-class CustomLoginForm(AuthenticationForm):
+class LoginForm(AuthenticationForm):
     username = forms.CharField(
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'username'})
+        widget=forms.TextInput(
+            attrs={'class': 'form-control', 'placeholder': 'username'}
+        )
     )
     password = forms.CharField(
-        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'password'})
+        widget=forms.PasswordInput(
+            attrs={'class': 'form-control', 'placeholder': 'password'}
+        )
     )
 
-class CustomRegistrationForm(UserCreationForm):
+class RegistrationForm(UserCreationForm):
     class Meta:
-        model = User 
+        model = CustomUser  
         fields = ['username', 'email', 'password1', 'password2']
 
 class ContactForm(forms.ModelForm):
     class Meta:
         model = Contact
         fields = ['username', 'email']
-        labels = {
-            'email': 'contact'
-        }
+        labels = {'email': 'contact'}

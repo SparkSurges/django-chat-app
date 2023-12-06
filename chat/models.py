@@ -1,6 +1,6 @@
 import json
-import datetime
 import logging
+from datetime import datetime
 from cryptography import fernet
 from django.db import models
 from django.db.models.signals import pre_save
@@ -15,15 +15,11 @@ class Chat(models.Model):
     admins = models.ManyToManyField(
         to=CustomUser, 
         through='ChatAdmin',
-        db_table='chat_admin',
-        on_delete=models.CASCADE, 
         related_name='owned_chats'
     )
     users = models.ManyToManyField(
         to=CustomUser, 
         through='ChatUser',
-        db_table='chat_user',
-        on_delete=models.CASCADE,
         related_name='chats'
     )
     name = models.CharField(max_length=128, blank=True, null=True)
@@ -36,7 +32,10 @@ class Chat(models.Model):
     is_private = models.BooleanField(default=False)
     link = models.JSONField(default=dict, blank=True, null=True)
     group_name = models.CharField(max_length=64, editable=False) 
-    created_at = models.DateTimeField(auto_now_add=True, editable=False)
+    created_at = models.DateTimeField(
+        editable=False, 
+        default=datetime.now
+    )
 
     def delete_image(self):
         self.picture.delete(save=False)
@@ -64,7 +63,7 @@ class Chat(models.Model):
     class Meta:
         db_table = 'chat'
 
-def generate_group_name(instance):
+def generate_group_name():
     return f'chat_{generate_key(size=40)}'
 
 def generate_link():
@@ -86,18 +85,6 @@ def set_default_group_name(sender, instance, **kwargs):
     if not instance.group_name:
         instance.group_name = generate_group_name(instance)
 
-class ChatUser(models.Model):
-    user = models.ForeignKey(
-        to=CustomUser,
-        on_delete=models.CASCADE,
-        db_column='user_id',
-    )
-    chat = models.ForeignKey(
-        to=Chat,
-        on_delete=models.CASCADE,
-        db_column='chat_id'
-    )
-
 class ChatAdmin(models.Model):
     user = models.ForeignKey(
         to=CustomUser, 
@@ -110,11 +97,29 @@ class ChatAdmin(models.Model):
         db_column='chat_id'
     )
 
+    class Meta:
+        db_table = 'chat_admin'
+        
+class ChatUser(models.Model):
+    user = models.ForeignKey(
+        to=CustomUser,
+        on_delete=models.CASCADE,
+        db_column='user_id',
+    )
+    chat = models.ForeignKey(
+        to=Chat,
+        on_delete=models.CASCADE,
+        db_column='chat_id'
+    )
+
+    class Meta:
+        db_table = 'chat_user'
+
 class Message(models.Model):
     id = models.UUIDField(primary_key=True)
     user = models.ForeignKey(to=CustomUser, on_delete=models.CASCADE)
     chat = models.ForeignKey(to=Chat, on_delete=models.CASCADE)
-    encrypted_content = models.BinaryField()
+    encrypted_content = models.BinaryField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
    
     def decrypt(self, hashkey):

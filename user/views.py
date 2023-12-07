@@ -5,6 +5,7 @@ from django.shortcuts import redirect, render
 from django.contrib import messages
 from user.forms import LoginForm, RegistrationForm
 from user.utils import anonymous_required
+from user.models import CustomUser
 
 @anonymous_required(redirect_to=reverse_lazy('chat-room'))
 def login_view(request):
@@ -36,6 +37,7 @@ def logout_view(request):
 def registration_view(request):
     if request.method == 'POST':
         form = RegistrationForm(data=request.POST)
+        print(form)
         if form.is_valid():
             user = form.save()
             user.save()

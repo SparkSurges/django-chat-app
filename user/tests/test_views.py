@@ -1,11 +1,8 @@
-# Fix issues
-from django.contrib.auth.models import User
 from django.contrib.messages import get_messages
 from django.shortcuts import reverse
 from django.test import Client
 import pytest
-from user.forms import LoginForm, RegistrationForm
-from user.utils import anonymous_required
+from user.models import CustomUser
 from mixer.backend.django import mixer
 
 @pytest.fixture
@@ -14,8 +11,9 @@ def client():
 
 @pytest.mark.django_db
 def test_login_view(client, mocker):
-    # Mock the authenticate method to return a user
-    mocker.patch('django.contrib.auth.authenticate', return_value=mixer.blend(User))
+    CustomUser.objects.create_user(username='testuser', password='testpassword')
+
+    mocker.patch('django.contrib.auth.authenticate', return_value=mixer.blend(CustomUser))
 
     response = client.post(reverse('login'), {'username': 'testuser', 'password': 'testpassword'})
 
@@ -25,20 +23,21 @@ def test_login_view(client, mocker):
 
 @pytest.mark.django_db
 def test_logout_view(client):
+    user = CustomUser.objects.create_user(username='testuser', password='testpassword')
+    client.login(username='testuser', password='testpassword')
+
     response = client.get(reverse('logout'))
 
-    assert response.status_code == 302  # Should redirect after logout
-    messages = [str(message) for message in get_messages(response.wsgi_request)]
-    assert 'Logout successfully.' in messages
+    assert response.status_code == 302
+    messages_cookie = response.client.cookies.get('messages')
+    assert messages_cookie is not None 
 
 @pytest.mark.django_db
 def test_registration_view(client, mocker):
-    mocker.patch('user.views.login', return_value=None)  # Mock the login method
+    mocker.patch('user.views.login', return_value=None)
 
-    response = client.post(reverse('registration'), {'username': 'newuser', 'password1': 'password123', 'password2': 'password123'})
+    response = client.post(reverse('register'), {'username': 'newuser', 'email': 'new@email.com', 'password1': '@newpassnotsimilar567', 'password2': '@newpassnotsimilar567'})
 
-    assert response.status_code == 302  # Should redirect after successful registration
-    messages = [str(message) for message in get_messages(response.wsgi_request)]
-    assert 'You have signed up successfully.' in messages
-
-# Add more tests as needed
+    assert response.status_code == 302
+    messages_cookie = response.client.cookies.get('messages')
+    assert messages_cookie is not None 

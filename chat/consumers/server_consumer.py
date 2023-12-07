@@ -117,9 +117,6 @@ class ServerConsumer(AsyncWebsocketConsumer):
     def users_list(self, event):
         self.send(text_data=json.dumps(event))
 
-    def users_list_online(self, event):
-        self.send(text_data=json.dumps(event))
-
     def chat_message(self, event):
         self.send(text_data=json.dumps(event))
         

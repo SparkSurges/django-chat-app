@@ -5,6 +5,10 @@ worker_count=$((cpu_cores*2+1))
 echo "Making database migrations..."
 python manage.py migrate
 
-echo "Starting Gunicorn with $worker_count worker threads..."
+# Start Celery in the background
+echo "Starting Celery..."
+celery -A core worker -l info &
 
-exec gunicorn website.wsgi:application --bind 0.0.0.0:8000 --workers $worker_count
+# Start Daphne with ASGI application
+echo "Starting Daphne with $worker_count worker threads..."
+exec daphne -u /tmp/daphne.sock core.asgi:application

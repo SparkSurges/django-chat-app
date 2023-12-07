@@ -129,6 +129,17 @@ CACHES = {
     }
 }
 
+# CELERY SETTINGS
+
+CELERY_BROKER_URL = f"redis://{ENV['REDIS_IP']}:{ENV['REDIS_PORT']}",
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_TIMEZONE = 'UTC'
+
+# Set user model
+
 AUTH_USER_MODEL = 'user.CustomUser'
 
 # Database

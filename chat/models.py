@@ -41,6 +41,11 @@ class Chat(models.Model):
         self.picture.delete(save=False)
         self.save()
 
+    def add_admin(self, user):
+        if user not in self.admins.all():
+            self.admins.add(user)
+            self.save()
+
     def join(self, user):
         if user not in self.users.all() and user not in self.admins.all():
             self.users.add(user)
@@ -120,7 +125,7 @@ class Message(models.Model):
     user = models.ForeignKey(to=CustomUser, on_delete=models.CASCADE)
     chat = models.ForeignKey(to=Chat, on_delete=models.CASCADE)
     encrypted_content = models.BinaryField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
    
     def decrypt(self, hashkey):
         try:

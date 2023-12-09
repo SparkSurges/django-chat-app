@@ -67,7 +67,6 @@ def logout_view(request):
 def registration_view(request):
     if request.method == 'POST':
         form = RegistrationForm(data=request.POST)
-        print(form)
         if form.is_valid():
             user = form.save()
             user.save()

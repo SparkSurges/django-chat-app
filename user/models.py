@@ -1,3 +1,5 @@
+import uuid
+from django.utils import timezone
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
@@ -7,6 +9,7 @@ class CustomUser(AbstractUser):
     encrypted_hashkey = models.BinaryField()
     picture = models.ImageField(upload_to='img/users/', blank=True, null=True)
     connected = models.BooleanField(default=False)
+    last_seen = models.DateTimeField(default=timezone.now)
 
     def user_connected(self):
         if not self.connected:
@@ -16,10 +19,11 @@ class CustomUser(AbstractUser):
     def user_disconnected(self):
         if self.connected:
             self.connected = False
+            self.last_seen = timezone.now()
             self.save()
 
 class Contact(models.Model):
-    contact_id = models.UUIDField(primary_key=True, db_column='contact_id')
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     user = models.ForeignKey(
         to=CustomUser, 
         on_delete=models.CASCADE, 

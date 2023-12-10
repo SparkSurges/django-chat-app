@@ -8,24 +8,27 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from chat.forms import ChatForm
-from chat.models import Message
+from chat.models import Message, Chat
+from chat.utils.serialization import serialize_chat_public_private
 from user.forms import ContactForm
 
 logger = logging.getLogger(__name__)
 
 INITIAL_PAGE_SIZE = 10
 
-@login_required(login_url='/user/login')
+@login_required(login_url='/user/login/')
 def chat_view(request):
     user_chats = request.user.chats.all()
 
     earliest_message_timestamps = Message.objects.filter(
-        chat__in=user_chats, user=request.user
+        chat__in=user_chats
     ).values('chat').annotate(earliest_timestamp=Min('timestamp'))
 
-    sorted_chats = user_chats.filter(
-        id__in=[message['chat'] for message in earliest_message_timestamps]
-    ).order_by('message__timestamp')
+    all_chats = user_chats | Chat.objects.filter(
+        id__in=[chat['chat'] for chat in earliest_message_timestamps]
+    )
+
+    sorted_chats = all_chats.order_by('message__timestamp')
 
     paginator = Paginator(sorted_chats, INITIAL_PAGE_SIZE)  # Show 10 chats per page
     page = request.GET.get('page', 1)
@@ -41,15 +44,17 @@ def chat_view(request):
         'username': request.user.username,
     }
 
+
+    serialized_chats = serialize_chat_public_private(request.user, current_page)
+
     form = ChatForm()
     return render(
-        request, 
-        'chat/index.html', 
+        request,
+        'chat/index.html',
         {
-            'chats': current_page, 
+            'chats': serialized_chats,
             'user': serialized_user,
             'create_chat': form,
-            'current_page': current_page,
         }
     )
 

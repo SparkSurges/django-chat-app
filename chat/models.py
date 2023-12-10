@@ -1,3 +1,4 @@
+import uuid
 import json
 import logging
 from datetime import datetime
@@ -5,13 +6,13 @@ from cryptography import fernet
 from django.db import models
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
-from chat.utils import generate_key
+from chat.utils.utils import generate_key
 from user.models import CustomUser
 
 logger = logging.getLogger(__name__)
 
 class Chat(models.Model):
-    id = models.UUIDField(primary_key=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     admins = models.ManyToManyField(
         to=CustomUser, 
         through='ChatAdmin',
@@ -82,13 +83,13 @@ def generate_link():
 
 @receiver(pre_save, sender=Chat)
 def set_initial_link(sender, instance, **kwargs):
-    if not instance.link and instance.is_private:
+    if not instance.link: 
         instance.link = json.dumps(generate_link())
 
 @receiver(pre_save, sender=Chat)
 def set_default_group_name(sender, instance, **kwargs):
     if not instance.group_name:
-        instance.group_name = generate_group_name(instance)
+        instance.group_name = generate_group_name()
 
 class ChatAdmin(models.Model):
     user = models.ForeignKey(
@@ -101,6 +102,7 @@ class ChatAdmin(models.Model):
         on_delete=models.CASCADE, 
         db_column='chat_id'
     )
+    is_owner = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'chat_admin'
@@ -121,7 +123,7 @@ class ChatUser(models.Model):
         db_table = 'chat_user'
 
 class Message(models.Model):
-    id = models.UUIDField(primary_key=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     user = models.ForeignKey(to=CustomUser, on_delete=models.CASCADE)
     chat = models.ForeignKey(to=Chat, on_delete=models.CASCADE)
     encrypted_content = models.BinaryField(default=0)
